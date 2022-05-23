@@ -6,28 +6,6 @@ import time as tm
 from math import comb
 from scipy.optimize import linprog
 
-# eduardo: added code for progress bar:
-# https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
-    if iteration == total: 
-        print()
-
 def in_unit_cube(p):
     """
         p a point of dimension n
@@ -155,9 +133,10 @@ def covering_radii(L):
     return extendedL
 
     
-def covering_radius(P):
+def covering_radius(P, label):
     """
         P a rational polyhedron
+        label is the string that appears in the progress bar
         returns the covering radius of P and a last-covered point
     """
 
@@ -190,7 +169,7 @@ def covering_radius(P):
       for anchor_points in itt.product(N_P,repeat=n+1): # takes (n+1)-tuples with repetition out of neighbors(P)
         # progress meter
         #print(f"{100.0*(index/total):.2f}%".ljust(40, " "), end='\r')
-        printProgressBar(index, total)
+        printProgressBar(index, total, prefix = label, length = 50)
         index += 1
 
         # build the system of linear equations that is to be solved
@@ -217,5 +196,41 @@ def covering_radius(P):
         else:
           res_test.append(result)
 
-    print(f"Covering radius: {mu_max}")
     return [mu_max,list(p_last)]
+
+# - eduardo start
+# added code for progress bar:
+# https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    #if iteration == total: 
+    #    print()
+
+def cs(P):
+    """
+        Computes the central symmetral body of a rational polyhedron P
+    """
+    return (-P+P)/2
+
+def test_sym(P, i = 0, t = 1):
+    """
+        Checks whether the inequality holds for a rational polyhedron P
+    """
+    return covering_radius(cs(P), f"Body {2 * i + 1} / {2 * t}")[0] <= covering_radius(P, f"Body {2 * i  + 2} / {2 * t}")[0]
+
+# eduardo end
