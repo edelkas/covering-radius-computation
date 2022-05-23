@@ -1,3 +1,4 @@
+from random import randint
 import numpy as num
 import itertools as itt
 import scipy as sci
@@ -133,7 +134,7 @@ def covering_radii(L):
     return extendedL
 
     
-def covering_radius(P, label):
+def covering_radius(P, label = ''):
     """
         P a rational polyhedron
         label is the string that appears in the progress bar
@@ -201,7 +202,7 @@ def covering_radius(P, label):
 # - eduardo start
 # added code for progress bar:
 # https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 2, length = 100, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -227,10 +228,29 @@ def cs(P):
     """
     return (-P+P)/2
 
-def test_sym(P, i = 0, t = 1):
+def test_sym(P, i = 1):
     """
         Checks whether the inequality holds for a rational polyhedron P
     """
-    return covering_radius(cs(P), f"Body {2 * i + 1} / {2 * t}")[0] <= covering_radius(P, f"Body {2 * i  + 2} / {2 * t}")[0]
+    return covering_radius(cs(P), f"Body {i} (1)")[0] <= covering_radius(P, f"Body {i} (2)")[0]
 
+def test_rand(n = 2, m = 3, r = 10, p = 1):
+    """
+        Infinite loop testing random polytopes
+        @params:
+            n - Dimension
+            m - Number of vertices
+            r - Range of coordinates (from -r to r)
+            p - Precision of coordinates (e.g. increments of 0.01)
+    """
+    index = 1
+    div = int(1.0/p)
+    coord = int(r) * div
+    while True:
+        v = [tuple(randint(-coord, coord) / div for i in range(n)) for j in range(m)]
+        P = Polyhedron(v, base_ring=QQ)
+        if not test_sym(P, index):
+            print(f"\nFound counterexample: {P.vertices_list()}")
+            break
+        index += 1
 # eduardo end
