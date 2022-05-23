@@ -3,8 +3,30 @@ import itertools as itt
 import scipy as sci
 import sympy as sym
 import time as tm
+from math import comb
 from scipy.optimize import linprog
 
+# eduardo: added code for progress bar:
+# https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    if iteration == total: 
+        print()
 
 def in_unit_cube(p):
     """
@@ -140,15 +162,21 @@ def covering_radius(P):
     """
 
     # setting up the problem
-    mu_max = 0
-    mu0 = mu_bound(P)
+    mu_max   = 0
+    mu0      = mu_bound(P)
     res_test = []     # efficiency list: maintains the solutions (mu,p) that don't pass the in_interior_of_translate test in order to avoid multiple superfluous candidate checking
-    p_last = []
-    n = P.dim()
-    P = move_origin(P)
-    N_P = neighbors(P,mu0)
+    p_last   = []
+    n        = P.dim()
+    P        = move_origin(P)
+    N_P      = neighbors(P,mu0)
+    ieqs     = P.inequalities_list()
+    index    = 1
+    total    = comb(len(ieqs),n+1)*len(N_P)**(n+1)
+    #print(f"Facets: {len(ieqs)}")
+    #print(f"Neighbours: {len(N_P)}")
+    #print(f"Systems: {total}")
     
-    for facet_normals in itt.combinations(P.inequalities_list(),n+1):
+    for facet_normals in itt.combinations(ieqs,n+1):
 
       # test for linearly independent choice
       if Matrix(QQ,list(facet_normals)).rank() < n+1:
@@ -160,6 +188,10 @@ def covering_radius(P):
       rhs_a = lhs[:,1:n+1]      # equals -A
   
       for anchor_points in itt.product(N_P,repeat=n+1): # takes (n+1)-tuples with repetition out of neighbors(P)
+        # progress meter
+        #print(f"{100.0*(index/total):.2f}%".ljust(40, " "), end='\r')
+        printProgressBar(index, total)
+        index += 1
 
         # build the system of linear equations that is to be solved
                       
@@ -185,4 +217,5 @@ def covering_radius(P):
         else:
           res_test.append(result)
 
+    print(f"Covering radius: {mu_max}")
     return [mu_max,list(p_last)]
